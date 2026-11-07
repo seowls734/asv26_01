@@ -1,1 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <title>타워 디펜스</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #0d0d1f;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    canvas { display: block; touch-action: none; }
 
+    /* 가로 모드 회전 안내 (세로 모드 게임이므로 가로일 때 안내) */
+    #rotate-hint {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #0d0d1f;
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    #rotate-hint .phone-icon { font-size: 64px; animation: ra 2s ease-in-out infinite; }
+    #rotate-hint p { color: #aabbff; font-size: 20px; font-family: Arial, sans-serif; text-align: center; }
+    #rotate-hint small { color: #556677; font-size: 14px; font-family: Arial, sans-serif; }
+    @keyframes ra {
+      0%   { transform: rotate(90deg); }
+      40%  { transform: rotate(0deg); }
+      60%  { transform: rotate(0deg); }
+      100% { transform: rotate(90deg); }
+    }
+    /* 가로 모드일 때 안내 표시 */
+    @media screen and (orientation: landscape) { #rotate-hint { display: flex; } }
+    @media screen and (orientation: portrait)  { #rotate-hint { display: none; } }
+  </style>
+</head>
+<body>
+  <div id="rotate-hint">
+    <div class="phone-icon">📱</div>
+    <p>화면을 세로로 돌려주세요</p>
+    <small>이 게임은 세로 모드에서 플레이합니다</small>
+  </div>
+
+  <!-- 스테이지 1 배경 이미지 -->
+  <img id="img_stage1_bg" src="src/assets/image.png" style="display:none">
+  <!-- 타워 텍스처 -->
+  <img id="img_tower_torch" src="src/assets/tower_torch.png" style="display:none">
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <!-- 공통 상수 -->
+  <script src="src/constants.js"></script>
+  <!-- 저장/불러오기 -->
+  <script src="src/storage.js"></script>
+  <!-- 데이터 -->
+  <script src="src/data/towerData.js"></script>
+  <script src="src/data/enemyData.js"></script>
+  <script src="src/data/stageData.js"></script>
+  <!-- 씬 -->
+  <script src="src/scenes/LobbyScene.js"></script>
+  <script src="src/scenes/GameScene.js"></script>
+  <!-- 진입점 -->
+  <script src="src/main.js"></script>
+</body>
+</html>
