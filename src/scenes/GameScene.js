@@ -176,8 +176,9 @@ class GameScene extends Phaser.Scene {
   drawMapDecorations() {
     const map      = this.stageConf.map;
     const isImgMap = (this.stageId === 1) && this.textures.exists('stage1_bg');
-    const dg       = this.add.graphics().setDepth(1);
-    if (isImgMap) dg.setAlpha(0.85);
+    // 이미지 맵에서는 픽셀아트가 모든 시각 정보를 제공 → 장식 스킵
+    if (isImgMap) return;
+    const dg = this.add.graphics().setDepth(1);
 
     const isPath = (r, c) => {
       if (r < 0 || r >= GRID_ROWS || c < 0 || c >= GRID_COLS) return false;
@@ -439,12 +440,8 @@ class GameScene extends Phaser.Scene {
     if (available.length === 0) return;
 
     const panelH = available.length * 56 + 16;
-    // 오른쪽 절반 타일이면 팝업을 타일 왼쪽에, 왼쪽 절반이면 오른쪽에 배치
-    const onRight = col >= Math.ceil(GRID_COLS / 2);
-    let panelX = onRight ? tx - 95 : tx + 95;
+    let panelX = W / 2;
     let panelY = ty - panelH / 2;
-    panelX = Math.min(panelX, W - 90);
-    panelX = Math.max(panelX, 90);
     panelY = Math.max(panelY, GRID_Y + 10);
     panelY = Math.min(panelY, DESIGN_HEIGHT - panelH - 10);
 
@@ -492,11 +489,8 @@ class GameScene extends Phaser.Scene {
     overlay.on('pointerdown', () => this.closePopup());
     this.popupObjects.push(overlay);
 
-    const onRight = tower.col >= Math.ceil(GRID_COLS / 2);
-    let panelX = onRight ? tx - 95 : tx + 95;
+    let panelX = W / 2;
     let panelY = ty - 70;
-    panelX = Math.min(panelX, W - 90);
-    panelX = Math.max(panelX, 90);
     panelY = Math.max(panelY, GRID_Y + 10);
     panelY = Math.min(panelY, DESIGN_HEIGHT - 160);
 
@@ -836,8 +830,10 @@ class GameScene extends Phaser.Scene {
         // 기지 도달 체크
         if (en.waypointIdx >= this.waypoints.length) {
           en.dying = true;
-          if (en.gfx)   en.gfx.destroy();
-          if (en.hpBar) en.hpBar.destroy();
+          if (en.gfx)         en.gfx.destroy();
+          if (en.hpBar)       en.hpBar.destroy();
+          if (en.hackOverlay) en.hackOverlay.destroy();
+          if (en.burnOverlay) en.burnOverlay.destroy();
           this.onBaseReached();
           return;
         }
@@ -858,7 +854,9 @@ class GameScene extends Phaser.Scene {
       }
 
       // 그래픽 갱신
-      if (en.gfx)   en.gfx.setPosition(en.x, en.y);
+      if (en.gfx)        en.gfx.setPosition(en.x, en.y);
+      if (en.hackOverlay && en.hackOverlay.active) en.hackOverlay.setPosition(en.x, en.y);
+      if (en.burnOverlay && en.burnOverlay.active) en.burnOverlay.setPosition(en.x, en.y);
       if (en.hpBar) {
         const r = Math.max(0, en.hp / en.maxHp);
         en.hpBar.setPosition(en.x, en.y - en.def.size - 5);
@@ -875,8 +873,10 @@ class GameScene extends Phaser.Scene {
     const prevIdx = en.waypointIdx - 2;
     if (prevIdx < 0) {
       en.dying = true;
-      if (en.gfx)   en.gfx.destroy();
-      if (en.hpBar) en.hpBar.destroy();
+      if (en.gfx)        en.gfx.destroy();
+      if (en.hpBar)       en.hpBar.destroy();
+      if (en.hackOverlay) en.hackOverlay.destroy();
+      if (en.burnOverlay) en.burnOverlay.destroy();
       return;
     }
     const wp   = this.waypoints[Math.max(0, prevIdx)];
@@ -986,7 +986,9 @@ class GameScene extends Phaser.Scene {
     tower.lastHack = now;
     const tgt = eligible[Math.floor(Math.random() * eligible.length)];
     tgt.hacked = true;
-    if (tgt.gfx) tgt.gfx.setFillStyle(0x00ffaa);
+    // Graphics objects don't have setFillStyle; use an overlay circle instead
+    if (tgt.hackOverlay) tgt.hackOverlay.destroy();
+    tgt.hackOverlay = this.add.circle(tgt.x, tgt.y, (tgt.def.size || 12) + 3, 0x00ffaa, 0.4).setDepth(8);
     this.showFloatingText(tgt.x, tgt.y, 'HACK!', '#00ffaa');
   }
 
@@ -1042,15 +1044,19 @@ class GameScene extends Phaser.Scene {
     if (!enemy || enemy.dying) return;
     enemy.burnTimer = Math.max(enemy.burnTimer, duration);
     enemy.burnDps   = Math.max(enemy.burnDps, dps);
-    if (enemy.gfx && enemy.gfx.active)
-      enemy.gfx.setStrokeStyle(2, 0xff4400);
+    // Graphics objects don't have setStrokeStyle; use an overlay circle
+    if (!enemy.burnOverlay) {
+      enemy.burnOverlay = this.add.circle(enemy.x, enemy.y, (enemy.def.size || 12) + 2, 0xff4400, 0.3).setDepth(8);
+    }
   }
 
   killEnemy(enemy, tower) {
     if (enemy.dying) return;
     enemy.dying = true;
-    if (enemy.gfx   && enemy.gfx.active)   enemy.gfx.destroy();
-    if (enemy.hpBar && enemy.hpBar.active)  enemy.hpBar.destroy();
+    if (enemy.gfx         && enemy.gfx.active)         enemy.gfx.destroy();
+    if (enemy.hpBar       && enemy.hpBar.active)        enemy.hpBar.destroy();
+    if (enemy.hackOverlay && enemy.hackOverlay.active)  enemy.hackOverlay.destroy();
+    if (enemy.burnOverlay && enemy.burnOverlay.active)  enemy.burnOverlay.destroy();
 
     const def = enemy.def;
     this.coins += def.coinReward;
