@@ -440,7 +440,7 @@ class GameScene extends Phaser.Scene {
     // 2배속 버튼 (우하단)
     const speedY = this.bottomBarY;
     const speedX = DESIGN_WIDTH - 28;
-    this.speedBtn = this.add.text(speedX, speedY, '2x', {
+    this.speedBtn = this.add.text(speedX, speedY, '1x', {
       fontSize: '14px', color: '#aaaaff', fontFamily: 'Arial', fontStyle: 'bold',
       backgroundColor: '#1a1a3a', padding: { x: 7, y: 5 },
     }).setOrigin(0.5).setDepth(15).setInteractive({ useHandCursor: true });
@@ -450,10 +450,10 @@ class GameScene extends Phaser.Scene {
   toggleSpeed() {
     this.speedMultiplier = this.speedMultiplier === 1 ? 2 : 1;
     if (this.speedMultiplier === 2) {
-      this.speedBtn.setText('1x');
+      this.speedBtn.setText('2x');
       this.speedBtn.setColor('#ffff44');
     } else {
-      this.speedBtn.setText('2x');
+      this.speedBtn.setText('1x');
       this.speedBtn.setColor('#aaaaff');
     }
   }
