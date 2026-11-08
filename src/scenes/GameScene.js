@@ -1000,9 +1000,9 @@ class GameScene extends Phaser.Scene {
       // 그래픽 갱신
       if (en.gfx) {
         en.gfx.setPosition(en.x, en.y);
-        // 텍스처 적: 방향에 따라 플립
+        // 텍스처 적: 방향에 따라 플립 (스프라이트 원본이 왼쪽 방향)
         if ((en.type === 'pickpocket' || en.type === 'bag_thief') && en.gfx.setFlipX) {
-          en.gfx.setFlipX(en.facing === 'left');
+          en.gfx.setFlipX(en.facing === 'right');
         }
       }
       if (en.hackOverlay && en.hackOverlay.active) en.hackOverlay.setPosition(en.x, en.y);
