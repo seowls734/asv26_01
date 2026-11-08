@@ -41,8 +41,9 @@ class GameScene extends Phaser.Scene {
 
     // 웨이포인트 → 픽셀 중심 좌표
     const rawWP = this.stageConf.waypoints || this.stageConf.waypointsA || [];
+    const pathOffX = this.stageConf.pathOffsetX || 0;
     this.waypoints = rawWP.map(([c, r]) => ({
-      x: c * TILE_SIZE + TILE_SIZE / 2,
+      x: c * TILE_SIZE + TILE_SIZE / 2 + pathOffX,
       y: GRID_Y + r * TILE_SIZE + TILE_SIZE / 2,
     }));
 
