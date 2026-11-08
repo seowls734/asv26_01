@@ -8,13 +8,13 @@ const TOWER_DEFS = {
     shopCost: 0,       // 보석 (상점 구매 비용, 0=기본 지급)
     range: 3.0,        // 타일 단위
     fireInterval: 2000,// ms
-    damage: 4,
-    burnDuration: 4000,// 화상 지속 ms
-    burnDps: 1,        // 화상 초당 피해
+    damage: 6,
+    burnDuration: 6000,// 화상 지속 ms
+    burnDps: 3,        // 화상 초당 피해
     spreadCount: 1,    // 번짐 대상 수
     color: 0xff6600,
     upgrades: [
-      { damage: 4, cost: 0  },   // Lv1 기본
+      { damage: 6, cost: 0  },   // Lv1 기본
       { damage: 6, cost: 15 },   // Lv2
       { damage: 8, cost: 25 },   // Lv3
     ],
