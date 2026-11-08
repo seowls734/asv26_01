@@ -19,6 +19,11 @@ class LobbyScene extends Phaser.Scene {
     this.drawTopBar();
     this.drawTabBar();
     this.showTab(this.currentTab);
+    // 흰색 원형 커서
+    this.cursorCircle = this.add.circle(0, 0, 7, 0xffffff, 0.9).setDepth(999);
+    this.input.on('pointermove', (ptr) => {
+      this.cursorCircle.setPosition(ptr.x, ptr.y);
+    });
   }
 
   // ── 상단 재화 바 ──────────────────────────────────────────
