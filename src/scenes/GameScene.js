@@ -168,17 +168,7 @@ class GameScene extends Phaser.Scene {
       }
     } catch(e) { console.warn('tower_torch bg removal failed:', e); }
 
-    // 좀도둑 단일 이미지
-    try {
-      if (this.textures.exists('pickpocket_still')) {
-        const img = this.textures.get('pickpocket_still').source[0].image;
-        const canvas = removeWhite(img);
-        if (canvas) {
-          this.textures.remove('pickpocket_still');
-          this.textures.addCanvas('pickpocket_still', canvas);
-        }
-      }
-    } catch(e) { console.warn('pickpocket_still bg removal failed:', e); }
+    // 좀도둑 단일 이미지 — 투명 PNG이므로 흰 배경 제거 불필요
 
     // 보따리 도둑
     try {
@@ -872,14 +862,14 @@ class GameScene extends Phaser.Scene {
 
     if (typeId === 'pickpocket') {
       const displaySize = def.size * 3;
-      if (this.textures.exists('pickpocket_walk')) {
+      if (this.textures.exists('pickpocket_still')) {
+        enemy.gfx = this.add.image(wp0.x, wp0.y, 'pickpocket_still')
+          .setDisplaySize(displaySize, displaySize).setDepth(7);
+      } else if (this.textures.exists('pickpocket_walk')) {
         const sp = this.add.sprite(wp0.x, wp0.y, 'pickpocket_walk')
           .setDisplaySize(displaySize, displaySize).setDepth(7);
         sp.play('pickpocket_walk');
         enemy.gfx = sp;
-      } else if (this.textures.exists('pickpocket_still')) {
-        enemy.gfx = this.add.image(wp0.x, wp0.y, 'pickpocket_still')
-          .setDisplaySize(displaySize, displaySize).setDepth(7);
       } else {
         const egfx = this.add.graphics().setDepth(7);
         this.drawEnemyShape(egfx, typeId, def);
