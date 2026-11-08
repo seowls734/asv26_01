@@ -395,7 +395,9 @@ class GameScene extends Phaser.Scene {
     // 상단 HUD 배경
     this.add.rectangle(W / 2, HUD_HEIGHT / 2, W, HUD_HEIGHT, 0x0d0d1f).setDepth(10);
 
-    // 일시정지 버튼
+    // 일시정지 버튼 (테두리 포함)
+    this.add.rectangle(26, HUD_HEIGHT / 2, 56, 22, 0x000000, 0)
+      .setStrokeStyle(1.5, 0xff6666, 0.85).setDepth(10);
     const exitBtn = this.add.text(26, HUD_HEIGHT / 2, '일시정지', {
       fontSize: '11px', color: '#ff6666', fontFamily: 'Arial',
     }).setOrigin(0.5).setDepth(11).setInteractive({ useHandCursor: true });
