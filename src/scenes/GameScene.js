@@ -96,8 +96,8 @@ class GameScene extends Phaser.Scene {
   // ─────────────────────────────────────────────────────────
   create() {
     this.cameras.main.setBackgroundColor('#1a1a2e');
-    // 흰 배경 제거 처리 (renderMap 전에 실행)
-    this.processSpritesheetBg();
+    // 흰 배경 제거 처리 (에러 시 무시하고 계속)
+    try { this.processSpritesheetBg(); } catch(e) { console.warn('processSpritesheetBg failed:', e); }
     this.renderMap();
     this.buildHUD();
     this.bindInput();
@@ -125,8 +125,10 @@ class GameScene extends Phaser.Scene {
       c.width = w; c.height = h;
       const ctx = c.getContext('2d');
       ctx.drawImage(source, 0, 0);
-      const id = ctx.getImageData(0, 0, w, h);
-      const d  = id.data;
+      // getImageData는 file:// 에서 보안 에러가 날 수 있음 → 실패하면 null 반환
+      let id;
+      try { id = ctx.getImageData(0, 0, w, h); } catch(e) { return null; }
+      const d = id.data;
       for (let i = 0; i < d.length; i += 4) {
         if (d[i] > 210 && d[i+1] > 210 && d[i+2] > 210) d[i+3] = 0;
       }
@@ -135,34 +137,40 @@ class GameScene extends Phaser.Scene {
     };
 
     // 좀도둑 걷기 스프라이트 시트
-    if (this.textures.exists('pickpocket_walk_src') && !this.textures.exists('pickpocket_walk')) {
-      const img = this.textures.get('pickpocket_walk_src').source[0].image;
-      const canvas = removeWhite(img);
-      if (canvas) {
-        const fw = Math.floor(canvas.width / 4);
-        this.textures.addSpriteSheet('pickpocket_walk', canvas, { frameWidth: fw, frameHeight: canvas.height });
+    try {
+      if (this.textures.exists('pickpocket_walk_src') && !this.textures.exists('pickpocket_walk')) {
+        const img = this.textures.get('pickpocket_walk_src').source[0].image;
+        const canvas = removeWhite(img);
+        if (canvas) {
+          const fw = Math.floor(canvas.width / 4);
+          this.textures.addSpriteSheet('pickpocket_walk', canvas, { frameWidth: fw, frameHeight: canvas.height });
+        }
       }
-    }
+    } catch(e) { console.warn('pickpocket_walk bg removal failed:', e); }
 
     // 횃불 궁수 타워
-    if (this.textures.exists('tower_torch')) {
-      const img = this.textures.get('tower_torch').source[0].image;
-      const canvas = removeWhite(img);
-      if (canvas) {
-        this.textures.remove('tower_torch');
-        this.textures.addCanvas('tower_torch', canvas);
+    try {
+      if (this.textures.exists('tower_torch')) {
+        const img = this.textures.get('tower_torch').source[0].image;
+        const canvas = removeWhite(img);
+        if (canvas) {
+          this.textures.remove('tower_torch');
+          this.textures.addCanvas('tower_torch', canvas);
+        }
       }
-    }
+    } catch(e) { console.warn('tower_torch bg removal failed:', e); }
 
     // 좀도둑 단일 이미지
-    if (this.textures.exists('pickpocket_still')) {
-      const img = this.textures.get('pickpocket_still').source[0].image;
-      const canvas = removeWhite(img);
-      if (canvas) {
-        this.textures.remove('pickpocket_still');
-        this.textures.addCanvas('pickpocket_still', canvas);
+    try {
+      if (this.textures.exists('pickpocket_still')) {
+        const img = this.textures.get('pickpocket_still').source[0].image;
+        const canvas = removeWhite(img);
+        if (canvas) {
+          this.textures.remove('pickpocket_still');
+          this.textures.addCanvas('pickpocket_still', canvas);
+        }
       }
-    }
+    } catch(e) { console.warn('pickpocket_still bg removal failed:', e); }
   }
 
   // ─────────────────────────────────────────────────────────
