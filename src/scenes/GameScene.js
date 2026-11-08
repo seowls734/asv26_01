@@ -76,6 +76,18 @@ class GameScene extends Phaser.Scene {
       if (t && t.naturalWidth > 0) this.textures.addImage('tower_torch', t);
       else this.load.image('tower_torch', 'src/assets/tower_torch.png');
     }
+    // 좀도둑 스프라이트 시트 (4프레임 가로 배열)
+    if (!this.textures.exists('pickpocket_walk')) {
+      this.load.spritesheet('pickpocket_walk', 'src/assets/enemy_pickpocket_walk.png', {
+        frameWidth: 384, frameHeight: 384,
+      });
+    }
+    // 단일 프레임 폴백
+    if (!this.textures.exists('pickpocket_still')) {
+      const p = document.getElementById('img_enemy_pickpocket');
+      if (p && p.naturalWidth > 0) this.textures.addImage('pickpocket_still', p);
+      else this.load.image('pickpocket_still', 'src/assets/enemy_pickpocket.png');
+    }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -87,6 +99,15 @@ class GameScene extends Phaser.Scene {
     this.buildHUD();
     this.bindInput();
     this.showWaveButton();
+    // 좀도둑 걷기 애니메이션
+    if (this.textures.exists('pickpocket_walk') && !this.anims.exists('pickpocket_walk')) {
+      this.anims.create({
+        key: 'pickpocket_walk',
+        frames: this.anims.generateFrameNumbers('pickpocket_walk', { start: 0, end: 3 }),
+        frameRate: 8,
+        repeat: -1,
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -139,6 +160,21 @@ class GameScene extends Phaser.Scene {
 
     // ── 장식 레이어
     this.drawMapDecorations();
+
+    // ── 경로 디버그 선 (이미지 맵: 적 이동 경로 확인용)
+    if (isImgMap) {
+      const pl = this.add.graphics().setDepth(3);
+      pl.lineStyle(3, 0xffdd00, 0.65);
+      pl.beginPath();
+      this.waypoints.forEach((wp, i) => {
+        if (i === 0) pl.moveTo(wp.x, wp.y); else pl.lineTo(wp.x, wp.y);
+      });
+      pl.strokePath();
+      this.waypoints.forEach(wp => {
+        pl.fillStyle(0xff4400, 0.9);
+        pl.fillCircle(wp.x, wp.y, 4);
+      });
+    }
 
     // ── 그리드 라인 (이미지 맵에서는 매우 연하게)
     const gl = this.add.graphics().setDepth(2);
@@ -310,9 +346,9 @@ class GameScene extends Phaser.Scene {
     // 상단 HUD 배경
     this.add.rectangle(W / 2, HUD_HEIGHT / 2, W, HUD_HEIGHT, 0x0d0d1f).setDepth(10);
 
-    // 일시정지(✕) 버튼
-    const exitBtn = this.add.text(16, HUD_HEIGHT / 2, '✕', {
-      fontSize: '20px', color: '#ff6666', fontFamily: 'Arial',
+    // 일시정지 버튼
+    const exitBtn = this.add.text(26, HUD_HEIGHT / 2, '일시정지', {
+      fontSize: '11px', color: '#ff6666', fontFamily: 'Arial',
     }).setOrigin(0.5).setDepth(11).setInteractive({ useHandCursor: true });
     exitBtn.on('pointerdown', () => this.onPause());
 
@@ -741,10 +777,34 @@ class GameScene extends Phaser.Scene {
       hpBar:  null,
     };
 
-    const egfx = this.add.graphics().setDepth(7);
-    this.drawEnemyShape(egfx, typeId, def);
-    egfx.setPosition(wp0.x, wp0.y);
-    enemy.gfx   = egfx;
+    enemy.facing = 'right';  // 방향 추적
+
+    if (typeId === 'pickpocket') {
+      const displaySize = def.size * 3;
+      if (this.textures.exists('pickpocket_walk')) {
+        // 스프라이트 시트 애니메이션
+        const sp = this.add.sprite(wp0.x, wp0.y, 'pickpocket_walk')
+          .setDisplaySize(displaySize, displaySize).setDepth(7);
+        sp.play('pickpocket_walk');
+        enemy.gfx = sp;
+      } else if (this.textures.exists('pickpocket_still')) {
+        // 단일 이미지
+        const img = this.add.image(wp0.x, wp0.y, 'pickpocket_still')
+          .setDisplaySize(displaySize, displaySize).setDepth(7);
+        enemy.gfx = img;
+      } else {
+        // 폴백: 그래픽
+        const egfx = this.add.graphics().setDepth(7);
+        this.drawEnemyShape(egfx, typeId, def);
+        egfx.setPosition(wp0.x, wp0.y);
+        enemy.gfx = egfx;
+      }
+    } else {
+      const egfx = this.add.graphics().setDepth(7);
+      this.drawEnemyShape(egfx, typeId, def);
+      egfx.setPosition(wp0.x, wp0.y);
+      enemy.gfx = egfx;
+    }
     enemy.hpBar = this.add.rectangle(wp0.x, wp0.y - def.size - 5, def.size * 2, 4, 0x00ff00).setDepth(8);
     this.enemies.push(enemy);
   }
@@ -844,6 +904,9 @@ class GameScene extends Phaser.Scene {
         const dist = Math.sqrt(dx * dx + dy * dy);
         const spd  = en.def.speed * TILE_SIZE * dt;
 
+        // 방향 갱신 (수평 이동 시에만)
+        if (Math.abs(dx) > 2) en.facing = dx > 0 ? 'right' : 'left';
+
         if (dist <= spd) {
           en.x = wp.x; en.y = wp.y;
           en.waypointIdx++;
@@ -854,7 +917,13 @@ class GameScene extends Phaser.Scene {
       }
 
       // 그래픽 갱신
-      if (en.gfx)        en.gfx.setPosition(en.x, en.y);
+      if (en.gfx) {
+        en.gfx.setPosition(en.x, en.y);
+        // 좀도둑 텍스처면 방향에 따라 플립
+        if (en.type === 'pickpocket' && en.gfx.setFlipX) {
+          en.gfx.setFlipX(en.facing === 'left');
+        }
+      }
       if (en.hackOverlay && en.hackOverlay.active) en.hackOverlay.setPosition(en.x, en.y);
       if (en.burnOverlay && en.burnOverlay.active) en.burnOverlay.setPosition(en.x, en.y);
       if (en.hpBar) {
