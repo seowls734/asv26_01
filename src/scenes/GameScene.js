@@ -156,17 +156,7 @@ class GameScene extends Phaser.Scene {
       }
     } catch(e) { console.warn('pickpocket_walk bg removal failed:', e); }
 
-    // 횃불 궁수 타워
-    try {
-      if (this.textures.exists('tower_torch')) {
-        const img = this.textures.get('tower_torch').source[0].image;
-        const canvas = removeWhite(img);
-        if (canvas) {
-          this.textures.remove('tower_torch');
-          this.textures.addCanvas('tower_torch', canvas);
-        }
-      }
-    } catch(e) { console.warn('tower_torch bg removal failed:', e); }
+    // 횃불 궁수 타워 — 투명 PNG이므로 흰 배경 제거 불필요
 
     // 좀도둑 단일 이미지 — 투명 PNG이므로 흰 배경 제거 불필요
 
