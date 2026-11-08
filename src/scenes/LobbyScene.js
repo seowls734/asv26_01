@@ -8,13 +8,6 @@ class LobbyScene extends Phaser.Scene {
     this.contentObjects = [];
   }
 
-  update() {
-    if (this.cursorCircle) {
-      const ptr = this.input.activePointer;
-      this.cursorCircle.setPosition(ptr.x, ptr.y);
-    }
-  }
-
   init(data) {
     this.save = loadSave();
     if (data && data.lastStage) this.currentStageIdx = data.lastStage;
@@ -26,8 +19,6 @@ class LobbyScene extends Phaser.Scene {
     this.drawTopBar();
     this.drawTabBar();
     this.showTab(this.currentTab);
-    // 흰색 원형 커서
-    this.cursorCircle = this.add.circle(0, 0, 7, 0xffffff, 0.9).setDepth(999);
   }
 
   // ── 상단 재화 바 ──────────────────────────────────────────

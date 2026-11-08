@@ -110,8 +110,6 @@ class GameScene extends Phaser.Scene {
     this.buildHUD();
     this.bindInput();
     this.showWaveButton();
-    // 흰색 원형 커서
-    this.cursorCircle = this.add.circle(0, 0, 7, 0xffffff, 0.9).setDepth(999);
     // 좀도둑 걷기 애니메이션 (processSpritesheetBg 이후)
     if (this.textures.exists('pickpocket_walk') && !this.anims.exists('pickpocket_walk')) {
       this.anims.create({
@@ -179,11 +177,6 @@ class GameScene extends Phaser.Scene {
   //  매 프레임 업데이트
   // ─────────────────────────────────────────────────────────
   update(time, delta) {
-    // 커서 위치 갱신
-    if (this.cursorCircle) {
-      const ptr = this.input.activePointer;
-      this.cursorCircle.setPosition(ptr.x, ptr.y);
-    }
     if (this.gameOver || this.cleared || this.pauseOpen) return;
     const spd = this.speedMultiplier;
     this.stepSpawn(time);
