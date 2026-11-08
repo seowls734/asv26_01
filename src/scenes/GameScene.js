@@ -675,7 +675,8 @@ class GameScene extends Phaser.Scene {
       col, row,
       x: col * TILE_SIZE + TILE_SIZE / 2,
       y: GRID_Y + row * TILE_SIZE + TILE_SIZE / 2,
-      inGameLevel: permLv,
+      inGameLevel: 0,   // 항상 Lv1부터 시작
+      permLv,           // 기본 능력치 보너스용
       lastFire:   0,
       lastSummon: this.time.now,   // 첫 소환을 summonInterval 뒤로 미룸
       lastHack:   this.time.now,
@@ -1054,7 +1055,7 @@ class GameScene extends Phaser.Scene {
   }
 
   onBaseReached() {
-    if (this.gameOver) return;
+    if (this.gameOver || this.cleared) return;
     this.gameOver = true;
     this.enemies.forEach(en => {
       en.dying = true;
@@ -1087,8 +1088,10 @@ class GameScene extends Phaser.Scene {
     const target = this.mostAdvancedEnemyInRange(tower.x, tower.y, range);
     if (!target) return;
 
+    // permLv 1단계당 데미지 +2 보너스
+    const permBonus = (tower.permLv || 0) * 2;
     tower.lastFire = now;
-    this.applyDamage(target, td.upgrades[lv].damage, tower);
+    this.applyDamage(target, td.upgrades[lv].damage + permBonus, tower);
     this.applyBurn(target, td.burnDuration, td.burnDps);
 
     // 번짐: 인접 1마리에게도 화상
@@ -1115,6 +1118,7 @@ class GameScene extends Phaser.Scene {
       birthTime: now,
       lastAttack: now,
       lv: tower.inGameLevel,
+      permLv: tower.permLv || 0,
       gfx: this.add.rectangle(tower.x, tower.y, 18, 22, 0x8899ff).setDepth(7),
     };
     this.knights.push(knight);
@@ -1168,7 +1172,8 @@ class GameScene extends Phaser.Scene {
         // 근접 공격
         if (now - k.lastAttack >= td.knightFireInterval) {
           k.lastAttack = now;
-          this.applyDamage(target, td.upgrades[k.lv].knightDamage, null);
+          const kPermBonus = (k.permLv || 0) * 3;
+          this.applyDamage(target, td.upgrades[k.lv].knightDamage + kPermBonus, null);
           this.showHitEffect(target.x, target.y, 0x8899ff);
         }
       }
@@ -1345,6 +1350,7 @@ class GameScene extends Phaser.Scene {
   //  클리어
   // ─────────────────────────────────────────────────────────
   onAllWavesCleared() {
+    if (this.cleared || this.gameOver) return;
     this.cleared = true;
     const sv      = this.saveData.stages[this.stageId];
     const isFirst = !sv.firstClear;
