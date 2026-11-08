@@ -91,6 +91,12 @@ class GameScene extends Phaser.Scene {
       if (p && p.naturalWidth > 0) this.textures.addImage('pickpocket_still', p);
       else this.load.image('pickpocket_still', 'src/assets/enemy_pickpocket.png');
     }
+    // 보따리 도둑
+    if (!this.textures.exists('bag_thief_img')) {
+      const b = document.getElementById('img_enemy_bag_thief');
+      if (b && b.naturalWidth > 0) this.textures.addImage('bag_thief_img', b);
+      else this.load.image('bag_thief_img', 'src/assets/enemy_bag_thief.png');
+    }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -173,6 +179,18 @@ class GameScene extends Phaser.Scene {
         }
       }
     } catch(e) { console.warn('pickpocket_still bg removal failed:', e); }
+
+    // 보따리 도둑
+    try {
+      if (this.textures.exists('bag_thief_img')) {
+        const img = this.textures.get('bag_thief_img').source[0].image;
+        const canvas = removeWhite(img);
+        if (canvas) {
+          this.textures.remove('bag_thief_img');
+          this.textures.addCanvas('bag_thief_img', canvas);
+        }
+      }
+    } catch(e) { console.warn('bag_thief bg removal failed:', e); }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -855,23 +873,23 @@ class GameScene extends Phaser.Scene {
     if (typeId === 'pickpocket') {
       const displaySize = def.size * 3;
       if (this.textures.exists('pickpocket_walk')) {
-        // 스프라이트 시트 애니메이션
         const sp = this.add.sprite(wp0.x, wp0.y, 'pickpocket_walk')
           .setDisplaySize(displaySize, displaySize).setDepth(7);
         sp.play('pickpocket_walk');
         enemy.gfx = sp;
       } else if (this.textures.exists('pickpocket_still')) {
-        // 단일 이미지
-        const img = this.add.image(wp0.x, wp0.y, 'pickpocket_still')
+        enemy.gfx = this.add.image(wp0.x, wp0.y, 'pickpocket_still')
           .setDisplaySize(displaySize, displaySize).setDepth(7);
-        enemy.gfx = img;
       } else {
-        // 폴백: 그래픽
         const egfx = this.add.graphics().setDepth(7);
         this.drawEnemyShape(egfx, typeId, def);
         egfx.setPosition(wp0.x, wp0.y);
         enemy.gfx = egfx;
       }
+    } else if (typeId === 'bag_thief' && this.textures.exists('bag_thief_img')) {
+      const displaySize = def.size * 3;
+      enemy.gfx = this.add.image(wp0.x, wp0.y, 'bag_thief_img')
+        .setDisplaySize(displaySize, displaySize).setDepth(7);
     } else {
       const egfx = this.add.graphics().setDepth(7);
       this.drawEnemyShape(egfx, typeId, def);
@@ -992,8 +1010,8 @@ class GameScene extends Phaser.Scene {
       // 그래픽 갱신
       if (en.gfx) {
         en.gfx.setPosition(en.x, en.y);
-        // 좀도둑 텍스처면 방향에 따라 플립
-        if (en.type === 'pickpocket' && en.gfx.setFlipX) {
+        // 텍스처 적: 방향에 따라 플립
+        if ((en.type === 'pickpocket' || en.type === 'bag_thief') && en.gfx.setFlipX) {
           en.gfx.setFlipX(en.facing === 'left');
         }
       }
