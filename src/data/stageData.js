@@ -55,7 +55,8 @@ const STAGE_DATA = {
                                    { type:'bag_thief',  count:3, interval:2000 },
                                    { type:'thug_boss',  count:1, interval:5000 }] },
     ],
-    pathOffsetX: 10,   // 배경 이미지 정렬용 픽셀 보정 (+오른쪽)
+    pathOffsetX: 15,   // 배경 이미지 정렬용 픽셀 보정 (+오른쪽)
+    pathOffsetY: 8,    // 배경 이미지 정렬용 픽셀 보정 (+아래)
     clearRewards: { firstGold:60, firstGem:15, retryGold:20, retryGem:0 },
   },
 
