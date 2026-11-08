@@ -161,21 +161,6 @@ class GameScene extends Phaser.Scene {
     // ── 장식 레이어
     this.drawMapDecorations();
 
-    // ── 경로 디버그 선 (이미지 맵: 적 이동 경로 확인용)
-    if (isImgMap) {
-      const pl = this.add.graphics().setDepth(3);
-      pl.lineStyle(3, 0xffdd00, 0.65);
-      pl.beginPath();
-      this.waypoints.forEach((wp, i) => {
-        if (i === 0) pl.moveTo(wp.x, wp.y); else pl.lineTo(wp.x, wp.y);
-      });
-      pl.strokePath();
-      this.waypoints.forEach(wp => {
-        pl.fillStyle(0xff4400, 0.9);
-        pl.fillCircle(wp.x, wp.y, 4);
-      });
-    }
-
     // ── 그리드 라인 (이미지 맵에서는 매우 연하게)
     const gl = this.add.graphics().setDepth(2);
     gl.lineStyle(1, 0x000000, isImgMap ? 0.07 : 0.22);
