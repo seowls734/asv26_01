@@ -55,6 +55,9 @@ class GameScene extends Phaser.Scene {
     this.popupObjects  = [];
     this._popupHandled = false;   // 팝업 버튼 클릭 후 전역 입력 차단 플래그
 
+    // 배속 (1 or 2)
+    this.speedMultiplier = 1;
+
     // ID 카운터
     this.eidCounter = 0;
     this.tidCounter = 0;
@@ -76,11 +79,9 @@ class GameScene extends Phaser.Scene {
       if (t && t.naturalWidth > 0) this.textures.addImage('tower_torch', t);
       else this.load.image('tower_torch', 'src/assets/tower_torch.png');
     }
-    // 좀도둑 스프라이트 시트 (4프레임 가로 배열)
-    if (!this.textures.exists('pickpocket_walk')) {
-      this.load.spritesheet('pickpocket_walk', 'src/assets/enemy_pickpocket_walk.png', {
-        frameWidth: 384, frameHeight: 384,
-      });
+    // 좀도둑 스프라이트 시트 — 흰 배경 제거를 위해 plain image로 먼저 로드
+    if (!this.textures.exists('pickpocket_walk') && !this.textures.exists('pickpocket_walk_src')) {
+      this.load.image('pickpocket_walk_src', 'src/assets/enemy_pickpocket_walk.png');
     }
     // 단일 프레임 폴백
     if (!this.textures.exists('pickpocket_still')) {
@@ -95,11 +96,13 @@ class GameScene extends Phaser.Scene {
   // ─────────────────────────────────────────────────────────
   create() {
     this.cameras.main.setBackgroundColor('#1a1a2e');
+    // 흰 배경 제거 처리 (renderMap 전에 실행)
+    this.processSpritesheetBg();
     this.renderMap();
     this.buildHUD();
     this.bindInput();
     this.showWaveButton();
-    // 좀도둑 걷기 애니메이션
+    // 좀도둑 걷기 애니메이션 (processSpritesheetBg 이후)
     if (this.textures.exists('pickpocket_walk') && !this.anims.exists('pickpocket_walk')) {
       this.anims.create({
         key: 'pickpocket_walk',
@@ -111,15 +114,68 @@ class GameScene extends Phaser.Scene {
   }
 
   // ─────────────────────────────────────────────────────────
+  //  스프라이트 흰 배경 제거
+  // ─────────────────────────────────────────────────────────
+  processSpritesheetBg() {
+    const removeWhite = (source) => {
+      const w = source.naturalWidth || source.width;
+      const h = source.naturalHeight || source.height;
+      if (!w || !h) return null;
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(source, 0, 0);
+      const id = ctx.getImageData(0, 0, w, h);
+      const d  = id.data;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i] > 210 && d[i+1] > 210 && d[i+2] > 210) d[i+3] = 0;
+      }
+      ctx.putImageData(id, 0, 0);
+      return c;
+    };
+
+    // 좀도둑 걷기 스프라이트 시트
+    if (this.textures.exists('pickpocket_walk_src') && !this.textures.exists('pickpocket_walk')) {
+      const img = this.textures.get('pickpocket_walk_src').source[0].image;
+      const canvas = removeWhite(img);
+      if (canvas) {
+        const fw = Math.floor(canvas.width / 4);
+        this.textures.addSpriteSheet('pickpocket_walk', canvas, { frameWidth: fw, frameHeight: canvas.height });
+      }
+    }
+
+    // 횃불 궁수 타워
+    if (this.textures.exists('tower_torch')) {
+      const img = this.textures.get('tower_torch').source[0].image;
+      const canvas = removeWhite(img);
+      if (canvas) {
+        this.textures.remove('tower_torch');
+        this.textures.addCanvas('tower_torch', canvas);
+      }
+    }
+
+    // 좀도둑 단일 이미지
+    if (this.textures.exists('pickpocket_still')) {
+      const img = this.textures.get('pickpocket_still').source[0].image;
+      const canvas = removeWhite(img);
+      if (canvas) {
+        this.textures.remove('pickpocket_still');
+        this.textures.addCanvas('pickpocket_still', canvas);
+      }
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
   //  매 프레임 업데이트
   // ─────────────────────────────────────────────────────────
   update(time, delta) {
-    if (this.gameOver || this.cleared) return;
+    if (this.gameOver || this.cleared || this.pauseOpen) return;
+    const spd = this.speedMultiplier;
     this.stepSpawn(time);
-    this.stepEnemies(delta);
+    this.stepEnemies(delta * spd);
     this.stepTowers(time);
-    this.stepKnights(time, delta);
-    if (this.stageId === 4) this.stepFuses(delta);
+    this.stepKnights(time, delta * spd);
+    if (this.stageId === 4) this.stepFuses(delta * spd);
     this.checkWaveEnd();
   }
 
@@ -360,6 +416,26 @@ class GameScene extends Phaser.Scene {
 
     // 하단 버튼 Y (그리드 아래 중앙)
     this.bottomBarY = GRID_Y + GRID_ROWS * TILE_SIZE + 20;
+
+    // 2배속 버튼 (우하단)
+    const speedY = this.bottomBarY;
+    const speedX = DESIGN_WIDTH - 28;
+    this.speedBtn = this.add.text(speedX, speedY, '2x', {
+      fontSize: '14px', color: '#aaaaff', fontFamily: 'Arial', fontStyle: 'bold',
+      backgroundColor: '#1a1a3a', padding: { x: 7, y: 5 },
+    }).setOrigin(0.5).setDepth(15).setInteractive({ useHandCursor: true });
+    this.speedBtn.on('pointerdown', () => this.toggleSpeed());
+  }
+
+  toggleSpeed() {
+    this.speedMultiplier = this.speedMultiplier === 1 ? 2 : 1;
+    if (this.speedMultiplier === 2) {
+      this.speedBtn.setText('1x');
+      this.speedBtn.setColor('#ffff44');
+    } else {
+      this.speedBtn.setText('2x');
+      this.speedBtn.setColor('#aaaaff');
+    }
   }
 
   updateHUD() {
@@ -1349,6 +1425,9 @@ class GameScene extends Phaser.Scene {
     if (this.pauseOpen || this.gameOver || this.cleared) return;
     this.pauseOpen = true;
 
+    // 모든 움직임 / 트윈 정지
+    this.tweens.pauseAll();
+
     const W = DESIGN_WIDTH, H = DESIGN_HEIGHT;
     const objs = [];
 
@@ -1362,6 +1441,7 @@ class GameScene extends Phaser.Scene {
 
     const closeAll = () => {
       objs.forEach(o => { if (o && o.active) o.destroy(); });
+      this.tweens.resumeAll();
       this.pauseOpen = false;
     };
 
